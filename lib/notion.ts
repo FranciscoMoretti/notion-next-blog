@@ -29,7 +29,7 @@ const notion = new Client({
   auth: process.env.NOTION_TOKEN,
 });
 
-const getDatabaseQuery = async (): Promise<PageObjectResponse[]> => {
+export const getDatabaseQuery = async (): Promise<PageObjectResponse[]> => {
   const response = await notion.databases.query({
     database_id: databaseId,
   });
