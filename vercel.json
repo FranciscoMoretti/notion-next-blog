@@ -2,7 +2,6 @@
     "crons": [
       {
         "path": "/api/cache",
-        "method": "POST",
         "schedule": "0 1 * * *"
       }
     ]
