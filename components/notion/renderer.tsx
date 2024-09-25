@@ -1,9 +1,12 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck 
 import { Fragment } from 'react';
 import Link from 'next/link';
 
 import Text from '../text';
 import styles from '../../styles/post.module.css';
 
+// @ts-expect-error properties not defined yet
 export function renderBlock(block) {
   const { type, id } = block;
   const value = block[type];

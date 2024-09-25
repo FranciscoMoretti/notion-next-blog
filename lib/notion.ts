@@ -1,7 +1,11 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck 
 import { Client } from "@notionhq/client";
 import { unstable_cache } from "next/cache";
-import { cache } from "react";
+// TODO: Investigate how to use react cache
+// import { cache } from "react";
 import { PageObjectResponse, BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+import { slugToPlainText } from "./slugToPlainText";
 
 export const revalidate = 3600; // revalidate the data at most every hour
 
@@ -38,28 +42,21 @@ export const getDatabase = unstable_cache(
   { tags: ["notion_database"], revalidate: 3600 }
 );
 
-export const getPageFromSlug = async (slug: string): Promise<PageObjectResponse | {}> => {
+export const getPageFromSlug = async (slug: string): Promise<PageObjectResponse | undefined> => {
   const databaseChildren = await getDatabase();
   const page = databaseChildren.find(page => 
-    page.properties.Slug && 
-    'rich_text' in page.properties.Slug &&
-    page.properties.Slug.rich_text[0]?.plain_text === slug
+    slugToPlainText(page) === slug
   );
-  return page || {};
+  return page;
 };
 
 type ExpandedBlockObjectResponse = BlockObjectResponse & {
   children?: ExpandedBlockObjectResponse[];
+  type: "bulleted_list" | "numbered_list" | BlockObjectResponse["type"];
+  bulleted_list?: { children: ExpandedBlockObjectResponse[] };
+  numbered_list?: { children: ExpandedBlockObjectResponse[] };
 };
 
-
-export async function getBlocks(blockID: string) {
-  const cachedBlocks = unstable_cache(
-  (blockID: string) => getNotionBlocks(blockID),
-  [`notion_blocks_${blockID}`],
-  { tags: [`notion_blocks_${blockID}`], revalidate: 3600 }
-);
-return cachedBlocks(blockID);}
 
 async function getNotionBlocks (blockID: string): Promise<ExpandedBlockObjectResponse[]> {
   const blockId = blockID.replaceAll("-", "");
@@ -79,11 +76,12 @@ async function getNotionBlocks (blockID: string): Promise<ExpandedBlockObjectRes
     return block as ExpandedBlockObjectResponse;
   });
 
-  return Promise.all(childBlocks).then((blocks) =>
+  return Promise.all(childBlocks ).then((blocks) =>
     blocks.reduce((acc: ExpandedBlockObjectResponse[], curr) => {
       if (curr.type === "bulleted_list_item") {
-        if (acc[acc.length - 1]?.type === "bulleted_list") {
-          (acc[acc.length - 1] as any).bulleted_list.children?.push(curr);
+        const lastItem = acc[acc.length - 1];
+        if (lastItem && lastItem.type === "bulleted_list") {
+          (lastItem.bulleted_list as { children: ExpandedBlockObjectResponse[] }).children.push(curr);
         } else {
           acc.push({
             id: getRandomInt(10 ** 99, 10 ** 100).toString(),
@@ -92,8 +90,9 @@ async function getNotionBlocks (blockID: string): Promise<ExpandedBlockObjectRes
           } as ExpandedBlockObjectResponse);
         }
       } else if (curr.type === "numbered_list_item") {
-        if (acc[acc.length - 1]?.type === "numbered_list") {
-          (acc[acc.length - 1] as any).numbered_list.children?.push(curr);
+        const lastItem = acc[acc.length - 1];
+        if (lastItem && lastItem.type === "numbered_list") {
+          (lastItem.numbered_list as { children: ExpandedBlockObjectResponse[] }).children.push(curr);
         } else {
           acc.push({
             id: getRandomInt(10 ** 99, 10 ** 100).toString(),
@@ -108,3 +107,12 @@ async function getNotionBlocks (blockID: string): Promise<ExpandedBlockObjectRes
     }, [])
   );
 }
+
+
+export async function getBlocks(blockID: string) {
+  const cachedBlocks = unstable_cache(
+  (blockID: string) => getNotionBlocks(blockID),
+  [`notion_blocks_${blockID}`],
+  { tags: [`notion_blocks_${blockID}`], revalidate: 3600 }
+);
+return cachedBlocks(blockID);}

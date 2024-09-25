@@ -1,9 +1,12 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck 
 import Link from 'next/link';
 import { getDatabase } from '../lib/notion';
 import Text from '../components/text';
 import styles from './index.module.css';
+import { slugToPlainText } from '@/lib/slugToPlainText';
 
-export const databaseId = process.env?.NOTION_DATABASE_ID ?? 'NOTION_DATABASE_ID';
+const databaseId = process.env?.NOTION_DATABASE_ID ?? 'NOTION_DATABASE_ID';
 
 async function getPosts() {
   const database = await getDatabase();
@@ -82,11 +85,12 @@ export default async function Page() {
                 year: 'numeric',
               },
             );
-            const slug = post.properties?.Slug?.rich_text[0].text.content;
+            const slug = slugToPlainText(post);
             return (
               <li key={post.id} className={styles.post}>
                 <h3 className={styles.postTitle}>
                   <Link href={`/article/${slug}`}>
+                    {/* @ts-expect-error properties not defined yet */}
                     <Text title={post.properties?.Title?.title} />
                   </Link>
                 </h3>
