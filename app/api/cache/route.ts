@@ -7,7 +7,7 @@ type PageObjectsMap = Record<string, PageObjectResponse>;
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export async function GET() {
   try {
     // Read from previous database_cache
     console.log('Revalidating cache');
