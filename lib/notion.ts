@@ -37,7 +37,9 @@ export const getDatabaseQuery = async (): Promise<PageObjectResponse[]> => {
 };
 
 export const getDatabase = unstable_cache(
-  getDatabaseQuery,
+  () => {
+    console.log("Refreshing with query");
+    return getDatabaseQuery()},
   ["notion_database"],
   { tags: ["notion_database"], revalidate: 3600 }
 );
@@ -116,3 +118,19 @@ export async function getBlocks(blockID: string) {
   { tags: [`notion_blocks_${blockID}`], revalidate: 3600 }
 );
 return cachedBlocks(blockID);}
+
+function getDatabaseUpdater(freshData: PageObjectResponse[]) {
+    return unstable_cache(
+        async () => {
+            console.log("Refreshing with updater function");
+            return freshData;
+        },
+        ["notion_database"],
+        { tags: ["notion_database"], revalidate: 3600 }
+    );
+}
+export async function updateDatabaseCache(freshData: PageObjectResponse[]) {
+    const updateDatabase = getDatabaseUpdater(freshData);
+    await updateDatabase();
+}
+

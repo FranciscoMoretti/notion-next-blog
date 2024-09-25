@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, getDatabaseQuery } from '@/lib/notion';
+import { getDatabase, getDatabaseQuery, updateDatabaseCache } from '@/lib/notion';
 import { revalidateTag } from 'next/cache';
 import { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints';
 
@@ -28,12 +28,14 @@ export async function POST() {
 
       const pagesToRevalidate = getPagesToRevalidate(cachedDataMap, freshDataMap);
       console.log(`Revalidating ${pagesToRevalidate.length} pages`);
-
       // Revalidate the pages
       for (const page of pagesToRevalidate) {
         console.log(`Revalidating [notion_blocks_${page.id}]`);
         revalidateTag(`notion_blocks_${page.id}`);
       }
+
+    //  Update the cache with the new data
+    await updateDatabaseCache(freshData);
 
       return new Response('Cache updated with new data', { status: 200 });
     } else {
