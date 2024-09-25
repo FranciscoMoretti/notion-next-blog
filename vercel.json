@@ -3,7 +3,7 @@
       {
         "path": "/api/cache",
         "method": "POST",
-        "schedule": "*/5 * * * *"
+        "schedule": "0 1 * * *"
       }
     ]
 }
